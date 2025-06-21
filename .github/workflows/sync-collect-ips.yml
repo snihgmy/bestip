@@ -1,0 +1,52 @@
+name: Sync and Run collect_ips.py every 6 hours
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'   # ⏱ 每 6 小时运行一次（UTC 时间）
+  workflow_dispatch:         # 支持手动触发
+
+jobs:
+  sync-and-run:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout your repository
+      uses: actions/checkout@v3
+      with:
+        persist-credentials: false  # 禁用默认身份，确保后续用你的 PAT 推送
+
+    - name: Checkout upstream repository
+      uses: actions/checkout@v3
+      with:
+        repository: ethgan/yxip
+        path: upstream
+        fetch-depth: 1
+
+    - name: Copy collect_ips.py from upstream
+      run: cp upstream/collect_ips.py ./collect_ips.py
+
+    - name: Commit and push if changed
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git add collect_ips.py
+
+        if git diff --cached --quiet; then
+          echo "No changes to commit."
+        else
+          git commit -m "Sync collect_ips.py from upstream"
+          git remote set-url origin https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository }}
+          git push origin main
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests beautifulsoup4
+
+    - name: Run collect_ips.py
+      run: python collect_ips.py
