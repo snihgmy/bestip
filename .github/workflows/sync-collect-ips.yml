@@ -51,3 +51,13 @@ jobs:
 
     - name: Run collect_ips.py
       run: python collect_ips.py
+
+    - name: Commit ip.txt if changed
+      run: |
+        git add ip.txt
+        if git diff --cached --quiet; then
+          echo "No changes to ip.txt."
+        else
+          git commit -m "Update ip.txt from collect_ips.py"
+          git remote set-url origin https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository }}
+          git push origin main
