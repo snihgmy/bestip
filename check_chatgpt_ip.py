@@ -36,11 +36,11 @@ def main():
             if result:
                 ok_ips.append(result)
 
-    with open("proxyip.txt", "w") as f:
+    with open("ChatGPTip.txt", "w") as f:
         for ip in ok_ips:
             f.write(ip + "\n")
 
-    print(f"检测完成，{len(ok_ips)} 个 IP 可用，已写入 proxyip.txt")
+    print(f"检测完成，{len(ok_ips)} 个 IP 可用，已写入 ChatGPTip.txt")
 
 if __name__ == "__main__":
     main()
