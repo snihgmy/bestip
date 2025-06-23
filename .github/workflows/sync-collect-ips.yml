@@ -1,19 +1,43 @@
-name: Auto IP Scan and Classification
+name: Sync and Run collect_ips.py every 6 hours
 
 on:
   schedule:
-    - cron: '0 */6 * * *'  # 每 6 小时运行一次（UTC）
-  workflow_dispatch:
+    - cron: '0 */6 * * *'   # ⏱ 每 6 小时运行一次（UTC 时间）
+  workflow_dispatch:         # 支持手动触发
 
 jobs:
-  scan-and-classify:
+  sync-and-run:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
+    - name: Checkout your repository
       uses: actions/checkout@v3
       with:
-        persist-credentials: false
+        persist-credentials: false  # 禁用默认身份，确保后续用你的 PAT 推送
+
+    - name: Checkout upstream repository
+      uses: actions/checkout@v3
+      with:
+        repository: ethgan/yxip
+        path: upstream
+        fetch-depth: 1
+
+    - name: Copy collect_ips.py from upstream
+      run: cp upstream/collect_ips.py ./collect_ips.py
+
+    - name: Commit and push if changed
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git add collect_ips.py
+
+        if git diff --cached --quiet; then
+          echo "No changes to commit."
+        else
+          git commit -m "Sync collect_ips.py from upstream"
+          git remote set-url origin https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository }}
+          git push origin main
+        fi
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -28,22 +52,13 @@ jobs:
     - name: Run collect_ips.py
       run: python collect_ips.py
 
-    - name: Generate ipzone.txt by region
-      run: python generate_zone.py
-
-    - name: Check usable IPs and group by country
-      run: python gen_chatgptip.py
-
-    - name: Commit chatgptip.txt if changed
+    - name: Commit ip.txt if changed
       run: |
-        git config --global user.name "github-actions[bot]"
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git add chatgptip.txt
+        git add ip.txt
         if git diff --cached --quiet; then
-          echo "No changes to chatgptip.txt."
+          echo "No changes to ip.txt."
         else
-          git commit -m "Update chatgptip.txt"
+          git commit -m "Update ip.txt from collect_ips.py"
           git remote set-url origin https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository }}
           git push origin main
         fi
-
