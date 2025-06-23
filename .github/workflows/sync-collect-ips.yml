@@ -51,33 +51,11 @@ jobs:
       run: python collect_ips.py
 
     - name: Generate ipzone.txt by region
-      run: |
-        python3 -c "import requests, os
-ips = []
-if os.path.exists('ip.txt'):
-  with open('ip.txt') as f:
-    ips = [line.strip() for line in f if line.strip()]
-zones = {}
-for ip in ips:
-  try:
-    r = requests.get(f'http://ip-api.com/json/{ip}?fields=country', timeout=5)
-    if r.status_code == 200:
-      country = r.json().get('country', '未知')
-    else:
-      country = '未知'
-  except:
-    country = '未知'
-  zones.setdefault(country, []).append(ip)
-with open('ipzone.txt', 'w') as out:
-  for country, items in sorted(zones.items()):
-    out.write(f'### {country} ({len(items)}) ###\\n')
-    out.writelines([ip + '\\n' for ip in items])
-    out.write('\\n')
-print('ipzone.txt 已生成')"
+      run: python generate_zone.py
 
     - name: Commit ip.txt & ipzone.txt if changed
       run: |
-        git add ip.txt ipzone.txt
+        git add collect_ips.py ip.txt ipzone.txt generate_zone.py
         if git diff --cached --quiet; then
           echo "No changes to ip.txt or ipzone.txt."
         else
