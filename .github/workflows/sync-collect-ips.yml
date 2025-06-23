@@ -31,18 +31,19 @@ jobs:
     - name: Generate ipzone.txt by region
       run: python generate_zone.py
 
-    - name: Check usable IPs for ChatGPT
-      run: python check_chatgpt_ip.py
+    - name: Check usable IPs and group by country
+      run: python gen_chatgptip.py
 
-    - name: Commit all updated files
+    - name: Commit chatgptip.txt if changed
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git add ip.txt ipzone.txt ChatGPTip.txt
+        git add chatgptip.txt
         if git diff --cached --quiet; then
-          echo "No changes detected."
+          echo "No changes to chatgptip.txt."
         else
-          git commit -m "Auto update ip.txt, ipzone.txt and ChatGPTip.txt"
+          git commit -m "Update chatgptip.txt"
           git remote set-url origin https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository }}
           git push origin main
         fi
+
