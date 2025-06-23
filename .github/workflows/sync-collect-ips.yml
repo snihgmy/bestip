@@ -2,8 +2,8 @@ name: Sync and Run collect_ips.py every 6 hours
 
 on:
   schedule:
-    - cron: '0 */6 * * *'   # ⏱ 每 6 小时运行一次（UTC 时间）
-  workflow_dispatch:         # 支持手动触发
+    - cron: '0 */6 * * *'   # 每 6 小时运行一次（UTC）
+  workflow_dispatch:
 
 jobs:
   sync-and-run:
@@ -36,7 +36,6 @@ jobs:
           git commit -m "Sync collect_ips.py from upstream"
           git remote set-url origin https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository }}
           git push origin main
-        fi
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -53,9 +52,10 @@ jobs:
 
     - name: Generate ipzone.txt by region
       run: |
-        python3 -c "
+        python3 - <<EOF
 import requests
 import os
+
 if os.path.exists('ip.txt'):
     with open('ip.txt') as f:
         ips = [line.strip() for line in f if line.strip()]
@@ -75,10 +75,10 @@ if os.path.exists('ip.txt'):
             out.write(f'### {country} ({len(items)}) ###\\n')
             out.writelines([ip + '\\n' for ip in items])
             out.write('\\n')
-        print('ipzone.txt 已生成')
+    print('ipzone.txt 已生成')
 else:
     print('ip.txt 不存在，跳过生成 ipzone.txt')
-        "
+EOF
 
     - name: Commit ip.txt & ipzone.txt if changed
       run: |
@@ -89,4 +89,3 @@ else:
           git commit -m "Update ip.txt and ipzone.txt"
           git remote set-url origin https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository }}
           git push origin main
-        fi
