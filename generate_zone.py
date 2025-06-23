@@ -1,4 +1,3 @@
-# generate_zone.py
 import requests
 import os
 
