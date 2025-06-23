@@ -1,42 +1,19 @@
-name: Sync and Run collect_ips.py every 6 hours 
+name: Auto IP Scan and Classification
 
 on:
   schedule:
-    - cron: '0 */6 * * *'   # 每 6 小时运行一次（UTC）
+    - cron: '0 */6 * * *'  # 每 6 小时运行一次（UTC）
   workflow_dispatch:
 
 jobs:
-  sync-and-run:
+  scan-and-classify:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout your repository
+    - name: Checkout repository
       uses: actions/checkout@v3
       with:
         persist-credentials: false
-
-    - name: Checkout upstream repository
-      uses: actions/checkout@v3
-      with:
-        repository: ethgan/yxip
-        path: upstream
-        fetch-depth: 1
-
-    - name: Copy collect_ips.py from upstream
-      run: cp upstream/collect_ips.py ./collect_ips.py
-
-    - name: Commit and push if collect_ips.py changed
-      run: |
-        git config --global user.name "github-actions[bot]"
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git add collect_ips.py
-        if git diff --cached --quiet; then
-          echo "No changes to collect_ips.py."
-        else
-          git commit -m "Sync collect_ips.py from upstream"
-          git remote set-url origin https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository }}
-          git push origin main
-        fi
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -54,13 +31,18 @@ jobs:
     - name: Generate ipzone.txt by region
       run: python generate_zone.py
 
-    - name: Commit ip.txt & ipzone.txt if changed
+    - name: Check usable IPs for ChatGPT
+      run: python check_chatgpt_ip.py
+
+    - name: Commit all updated files
       run: |
-        git add collect_ips.py ip.txt ipzone.txt generate_zone.py
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git add ip.txt ipzone.txt proxyip.txt
         if git diff --cached --quiet; then
-          echo "No changes to ip.txt or ipzone.txt."
+          echo "No changes detected."
         else
-          git commit -m "Update ip.txt and ipzone.txt"
+          git commit -m "Auto update ip.txt, ipzone.txt and proxyip.txt"
           git remote set-url origin https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository }}
           git push origin main
         fi
